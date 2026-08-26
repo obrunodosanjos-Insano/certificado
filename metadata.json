@@ -1,0 +1,6 @@
+{
+  "name": "Gerador de Certificados",
+  "description": "Aplicativo ágil e elegante para criação e geração de certificados profissionais individuais e em massa (15+ certificados em segundos) em PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
