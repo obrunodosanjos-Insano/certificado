@@ -1,11 +1,49 @@
-<div align="center">
+# 🎓 Gerador de Certificados
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Plataforma para criação, emissão e validação de certificados digitais.
 
-  <h1>Built with AI Studio</h2>
+## 🚀 Funcionalidades planejadas
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- 📝 Cadastro de participante, curso/evento, carga horária, data e responsável
+- 🎨 Múltiplos modelos de certificado (militar, acadêmico, esportivo e profissional)
+- 👀 Pré-visualização em tempo real
+- 📄 Exportação em PDF pronta para impressão
+- 🖼️ Upload de logo, brasão e assinatura
+- 🔢 Código único de validação para cada certificado
+- 🔗 QR Code apontando para a página pública de validação
+- 📚 Geração em massa por CSV/Excel
+- 📦 Download de certificados em ZIP
+- 🌐 Página pública para validar certificados
+- 📊 Painel administrativo com histórico e estatísticas
+- 📱 Interface responsiva para computador, tablet e celular
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 🎯 Objetivo
 
-</div>
+Transformar o projeto em uma plataforma completa de emissão, gerenciamento e validação de certificados, com foco em facilidade de uso, aparência profissional e autenticidade.
+
+## 🛠️ Roadmap
+
+### Fase 1 — Base
+- [ ] Interface profissional e responsiva
+- [ ] Formulário completo de certificado
+- [ ] Pré-visualização em tempo real
+- [ ] Sistema de templates
+
+### Fase 2 — Emissão
+- [ ] Geração de PDF
+- [ ] Logos e assinaturas personalizadas
+- [ ] Numeração automática
+- [ ] Código único de validação
+
+### Fase 3 — Validação
+- [ ] QR Code
+- [ ] Página pública de validação
+- [ ] Consulta por código
+- [ ] Status válido/inválido
+
+### Fase 4 — Escala
+- [ ] Importação CSV/Excel
+- [ ] Geração em massa
+- [ ] Download ZIP
+- [ ] Painel administrativo
+- [ ] Histórico e estatísticas
