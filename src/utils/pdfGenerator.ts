@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { OfficialCertificateSettings, Recipient } from '../types';
