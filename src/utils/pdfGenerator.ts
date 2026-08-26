@@ -1,126 +1,233 @@
+import React from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { OfficialCertificateSettings, Recipient } from '../types';
+import { OfficialCertificateCard } from '../components/OfficialCertificateCard';
+import { OfficialCertificateVerso } from '../components/OfficialCertificateVerso';
 
 export interface BatchProgressCallback {
   (current: number, total: number, statusText: string): void;
 }
 
-const fullCode = (r: Recipient) => {
-  const raw = (r.certNumber || '006').trim();
-  return raw.includes('/') ? raw : `${raw.padStart(3, '0')}/CVTE/${r.year || '2026'}`;
+const waitForImages = async (container: HTMLElement): Promise<void> => {
+  const images = Array.from(container.querySelectorAll('img'));
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve, reject) => {
+          if (img.complete) {
+            if (img.naturalWidth > 0) resolve();
+            else reject(new Error(`Não foi possível carregar a imagem: ${img.src}`));
+            return;
+          }
+          img.addEventListener('load', () => resolve(), { once: true });
+          img.addEventListener('error', () => reject(new Error(`Não foi possível carregar a imagem: ${img.src}`)), { once: true });
+        })
+    )
+  );
 };
 
-const waitForAssets = async (root: HTMLElement) => {
-  if (document.fonts?.ready) await document.fonts.ready;
-  const images = Array.from(root.querySelectorAll('img'));
-  await Promise.all(images.map(img => {
-    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-    return new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error(`Não foi possível carregar a imagem: ${img.src}`));
-    });
-  }));
-  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+const waitForFonts = async (): Promise<void> => {
+  if ('fonts' in document) await document.fonts.ready;
 };
 
-const logo = (src: string, side: 'left' | 'right') =>
-  `<img src="${src}" crossorigin="anonymous" style="position:absolute;${side}:80px;top:50px;width:64px;height:89px;object-fit:contain" />`;
+const nextPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
-export const buildCertificateFrontHtml = (r: Recipient, _settings: OfficialCertificateSettings): string => {
-  const cat = (r.cnhCategoria || 'AD').replace(/[“”]/g, '');
-  return `<div style="width:1000px;height:707px;background:#fff;color:#000;box-sizing:border-box;position:relative;overflow:hidden;font-family:'Times New Roman',serif">
-    <div style="position:absolute;inset:16px;border:2px solid #000"></div>
-    ${logo('/sgex-logo.jpg','left')}${logo('/badm-qgex-logo.jpg','right')}
-    <div style="position:absolute;left:330px;top:45px;width:340px;text-align:center">
-      <div style="font-size:38px;font-weight:bold;letter-spacing:5px;color:#d4582f">CERTIFICADO</div>
-      <div style="margin-top:10px;font:700 17px Arial,sans-serif;line-height:1.2">Condutores de Veículos de<br/>Transporte de Emergência</div>
-    </div>
-    <div style="position:absolute;right:75px;top:175px;font:700 18px Arial,sans-serif">${fullCode(r)}</div>
-    <div style="position:absolute;left:55px;right:55px;top:255px;font-size:17px;line-height:1.8;text-align:justify">
-      A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias – (Instrução Nº 592, de 10 de agosto de 2020/Detran-DF) certifica que <strong>${r.name || 'CARLOS HENRIQUE CAETANO DA SILVA'}</strong>, inscrito no CPF nº <strong>${r.cpf || '067.440.731-84'}</strong> e no Nº REGISTRO <strong>${r.cnhRegistro || '07575025319'}</strong>, categoria <strong>“${cat}”</strong>, concluiu com aproveitamento o <strong>Curso Especializado para Condutores de Veículos de Transporte de Emergência</strong>, ministrado pela IET - Forte Caxias, no período de <strong>${r.periodo || '08 a 16 de junho de 2026'}</strong>, com carga horária de <strong>${r.cargaHoraria || '50h/a'}</strong>, com validade de cinco anos após o término do curso, conforme Resolução Nº 1.020/2025 do CONTRAN.
-    </div>
-    <div style="position:absolute;left:0;right:0;top:510px;text-align:center;font-size:18px;font-weight:bold">Brasília-DF, ${r.dataEmissao || '18 de junho de 2026'}</div>
-    <div style="position:absolute;left:90px;bottom:55px;width:260px;text-align:center;font:12px Arial,sans-serif;border-top:1px solid #000;padding-top:4px"><strong>Carlos Henrique Ferreira De Mello</strong><br/>Diretor Geral<br/>981.050.007-68</div>
-    <div style="position:absolute;right:70px;bottom:60px;text-align:right;font:700 11px Arial,sans-serif">CNPJ Nº 21.744.847/0001-50<br/>BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO</div>
-  </div>`;
-};
+interface RenderedCertificate {
+  host: HTMLDivElement;
+  root: Root;
+  element: HTMLElement;
+}
 
-export const buildCertificateVersoHtml = (r: Recipient, settings: OfficialCertificateSettings): string => {
-  const disciplines = r.disciplinas || settings.defaultDisciplines || [];
-  const rows = disciplines.map(d => `<tr><td>${d.name}</td><td>${d.cargaHoraria}</td><td>${d.avaliacao}</td><td>${d.instrutor}</td></tr>`).join('');
-  return `<div style="width:1000px;height:707px;background:#fff;color:#000;box-sizing:border-box;padding:45px 60px;position:relative;font-family:Arial,sans-serif">
-    <div style="position:absolute;inset:16px;border:2px solid #000"></div>
-    ${logo('/sgex-logo.jpg','left')}${logo('/badm-qgex-logo.jpg','right')}
-    <h1 style="text-align:center;font-size:25px;margin:25px 120px 5px">BASE ADMINISTRATIVA DO QUARTEL-GENERAL DO EXÉRCITO<br/>“FORTE CAXIAS”</h1>
-    <div style="text-align:center;font-weight:900;margin:35px 0 15px">CONTEÚDO PROGRAMÁTICO <span style="float:right">${fullCode(r)}</span></div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>DISCIPLINA</th><th>CARGA HORÁRIA</th><th>AVALIAÇÃO</th><th>INSTRUTOR</th></tr></thead><tbody>${rows}</tbody></table>
-    <style>th,td{border:2px solid #000;padding:12px;text-align:center}th{background:#e2e8f0}</style>
-  </div>`;
-};
+const renderCertificate = async (
+  side: 'front' | 'back',
+  recipient: Recipient,
+  settings: OfficialCertificateSettings
+): Promise<RenderedCertificate> => {
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-12000px';
+  host.style.top = '0';
+  host.style.background = '#fff';
+  host.style.pointerEvents = 'none';
+  host.style.zIndex = '-9999';
+  document.body.appendChild(host);
 
-const makeContainer = () => {
-  const el = document.createElement('div');
-  Object.assign(el.style, { position:'fixed', left:'0', top:'0', width:'1000px', height:'707px', zIndex:'-9999', pointerEvents:'none', opacity:'1' });
-  document.body.appendChild(el);
-  return el;
-};
+  const root = createRoot(host);
+  const id = `pdf-certificate-${side}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const capture = async (container: HTMLElement, html: string) => {
-  container.innerHTML = html;
-  await waitForAssets(container);
-  return html2canvas(container, { scale: 2, useCORS: true, allowTaint: false, logging: false, backgroundColor: '#ffffff', width:1000, height:707, windowWidth:1200, windowHeight:900 });
-};
-
-export const exportElementToPdf = async (elementId: string, fileName='certificado.pdf'): Promise<void> => {
-  const el = document.getElementById(elementId);
-  if (!el) throw new Error('Elemento do certificado não encontrado.');
-  await waitForAssets(el);
-  const canvas = await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#fff'});
-  const pdf = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,297,210);
-  pdf.save(fileName);
-};
-
-export const generate2PagePdfBlobForRecipient = async (r: Recipient, settings: OfficialCertificateSettings): Promise<Blob> => {
-  const container = makeContainer();
-  try {
-    const pdf = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    const front = await capture(container, buildCertificateFrontHtml(r,settings));
-    pdf.addImage(front.toDataURL('image/jpeg',0.95),'JPEG',0,0,297,210);
-    pdf.addPage('a4','landscape');
-    const back = await capture(container, buildCertificateVersoHtml(r,settings));
-    pdf.addImage(back.toDataURL('image/jpeg',0.95),'JPEG',0,0,297,210);
-    return pdf.output('blob');
-  } finally { container.remove(); }
-};
-
-export const generateBatchZip = async (recipients: Recipient[], settings: OfficialCertificateSettings, onProgress?: BatchProgressCallback): Promise<void> => {
-  const zip = new JSZip();
-  const folder = zip.folder('certificados')!;
-  for (let i=0;i<recipients.length;i++) {
-    const r=recipients[i]; onProgress?.(i+1,recipients.length,`Gerando ${i+1} de ${recipients.length}`);
-    const blob=await generate2PagePdfBlobForRecipient(r,settings);
-    folder.file(`certificado_${(r.certNumber||String(i+1)).replace(/\//g,'-')}_${(r.name||'aluno').replace(/[^a-zA-Z0-9]+/g,'_')}.pdf`,blob);
+  if (side === 'front') {
+    root.render(
+      React.createElement(OfficialCertificateCard, {
+        id,
+        recipient,
+        settings,
+        scale: 1,
+      })
+    );
+  } else {
+    root.render(
+      React.createElement(OfficialCertificateVerso, {
+        id,
+        recipient,
+        settings,
+        scale: 1,
+      })
+    );
   }
-  saveAs(await zip.generateAsync({type:'blob'}),'certificados.zip');
+
+  await nextPaint();
+  await waitForFonts();
+  await waitForImages(host);
+  await nextPaint();
+
+  const element = host.querySelector(`#${id}`) as HTMLElement | null;
+  if (!element) {
+    root.unmount();
+    host.remove();
+    throw new Error('Não foi possível montar o certificado para gerar o PDF.');
+  }
+
+  return { host, root, element };
 };
 
-export const generateCombinedMultiPagePdf = async (recipients: Recipient[], settings: OfficialCertificateSettings, onProgress?: BatchProgressCallback): Promise<void> => {
-  const pdf = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  const container=makeContainer();
+const cleanupRendered = ({ host, root }: RenderedCertificate) => {
+  root.unmount();
+  host.remove();
+};
+
+const elementToJpeg = async (element: HTMLElement, scale = 2.2): Promise<string> => {
+  const canvas = await html2canvas(element, {
+    scale,
+    useCORS: true,
+    allowTaint: false,
+    logging: false,
+    backgroundColor: '#ffffff',
+    imageTimeout: 15000,
+    removeContainer: true,
+  });
+  return canvas.toDataURL('image/jpeg', 0.96);
+};
+
+const normalizeCode = (recipient: Recipient): string => {
+  const raw = (recipient.certNumber || '006/CVTE/2026').trim();
+  return raw.includes('/') ? raw : `${raw.padStart(3, '0')}/CVTE/2026`;
+};
+
+const safeFilePart = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+
+export const exportElementToPdf = async (
+  elementId: string,
+  fileName = 'certificado.pdf'
+): Promise<void> => {
+  const element = document.getElementById(elementId);
+  if (!element) throw new Error('Elemento do certificado não encontrado no documento.');
+
+  await waitForFonts();
+  await waitForImages(element);
+  const image = await elementToJpeg(element, 2.3);
+
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  pdf.addImage(image, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+  saveAs(pdf.output('blob'), fileName);
+};
+
+export const generate2PagePdfBlobForRecipient = async (
+  recipient: Recipient,
+  settings: OfficialCertificateSettings
+): Promise<Blob> => {
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  let front: RenderedCertificate | null = null;
+  let back: RenderedCertificate | null = null;
+
   try {
-    for(let i=0;i<recipients.length;i++) {
-      const r=recipients[i]; onProgress?.(i+1,recipients.length,`Gerando ${i+1} de ${recipients.length}`);
-      if(i>0) pdf.addPage('a4','landscape');
-      const front=await capture(container,buildCertificateFrontHtml(r,settings));
-      pdf.addImage(front.toDataURL('image/jpeg',0.93),'JPEG',0,0,297,210);
-      pdf.addPage('a4','landscape');
-      const back=await capture(container,buildCertificateVersoHtml(r,settings));
-      pdf.addImage(back.toDataURL('image/jpeg',0.93),'JPEG',0,0,297,210);
+    front = await renderCertificate('front', recipient, settings);
+    const frontImage = await elementToJpeg(front.element, 2.3);
+    pdf.addImage(frontImage, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+    cleanupRendered(front);
+    front = null;
+
+    back = await renderCertificate('back', recipient, settings);
+    const backImage = await elementToJpeg(back.element, 2.1);
+    pdf.addPage('a4', 'landscape');
+    pdf.addImage(backImage, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+
+    return pdf.output('blob');
+  } finally {
+    if (front) cleanupRendered(front);
+    if (back) cleanupRendered(back);
+  }
+};
+
+export const generateBatchZip = async (
+  recipients: Recipient[],
+  settings: OfficialCertificateSettings,
+  onProgress?: BatchProgressCallback
+): Promise<void> => {
+  if (!recipients.length) throw new Error('Não há certificados para gerar.');
+
+  const zip = new JSZip();
+  const folder = zip.folder('certificados') || zip;
+
+  for (let i = 0; i < recipients.length; i++) {
+    const recipient = recipients[i];
+    onProgress?.(i + 1, recipients.length, `Gerando ${i + 1} de ${recipients.length}: ${recipient.name}`);
+    const blob = await generate2PagePdfBlobForRecipient(recipient, settings);
+    const code = safeFilePart(normalizeCode(recipient));
+    const name = safeFilePart(recipient.name || `participante_${i + 1}`);
+    folder.file(`certificado_${code}_${name}.pdf`, blob);
+  }
+
+  onProgress?.(recipients.length, recipients.length, 'Compactando certificados...');
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  saveAs(zipBlob, `certificados_${new Date().toISOString().slice(0, 10)}.zip`);
+};
+
+export const generateCombinedMultiPagePdf = async (
+  recipients: Recipient[],
+  settings: OfficialCertificateSettings,
+  onProgress?: BatchProgressCallback
+): Promise<void> => {
+  if (!recipients.length) throw new Error('Não há certificados para gerar.');
+
+  const combined = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  let pageCount = 0;
+
+  for (let i = 0; i < recipients.length; i++) {
+    const recipient = recipients[i];
+    onProgress?.(i + 1, recipients.length, `Processando certificado ${i + 1} de ${recipients.length}...`);
+
+    let front: RenderedCertificate | null = null;
+    let back: RenderedCertificate | null = null;
+    try {
+      front = await renderCertificate('front', recipient, settings);
+      const frontImage = await elementToJpeg(front.element, 2.0);
+      if (pageCount > 0) combined.addPage('a4', 'landscape');
+      combined.addImage(frontImage, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+      pageCount++;
+      cleanupRendered(front);
+      front = null;
+
+      back = await renderCertificate('back', recipient, settings);
+      const backImage = await elementToJpeg(back.element, 1.9);
+      combined.addPage('a4', 'landscape');
+      combined.addImage(backImage, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+      pageCount++;
+    } finally {
+      if (front) cleanupRendered(front);
+      if (back) cleanupRendered(back);
     }
-    pdf.save('todos_certificados.pdf');
-  } finally { container.remove(); }
+  }
+
+  onProgress?.(recipients.length, recipients.length, 'PDF pronto para download.');
+  saveAs(combined.output('blob'), `todos_certificados_${new Date().toISOString().slice(0, 10)}.pdf`);
 };
