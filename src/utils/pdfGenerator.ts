@@ -45,7 +45,8 @@ interface RenderedCertificate {
 const renderCertificate = async (
   side: 'front' | 'back',
   recipient: Recipient,
-  settings: OfficialCertificateSettings
+  settings: OfficialCertificateSettings,
+  digitalSignature?: string | null
 ): Promise<RenderedCertificate> => {
   const host = document.createElement('div');
   host.style.position = 'fixed';
@@ -66,6 +67,7 @@ const renderCertificate = async (
         recipient,
         settings,
         scale: 1,
+        digitalSignature: digitalSignature || null,
       })
     );
   } else {
@@ -143,14 +145,15 @@ export const exportElementToPdf = async (
 
 export const generate2PagePdfBlobForRecipient = async (
   recipient: Recipient,
-  settings: OfficialCertificateSettings
+  settings: OfficialCertificateSettings,
+  digitalSignature?: string | null
 ): Promise<Blob> => {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   let front: RenderedCertificate | null = null;
   let back: RenderedCertificate | null = null;
 
   try {
-    front = await renderCertificate('front', recipient, settings);
+    front = await renderCertificate('front', recipient, settings, digitalSignature);
     const frontImage = await elementToJpeg(front.element, 2.3);
     pdf.addImage(frontImage, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
     cleanupRendered(front);
