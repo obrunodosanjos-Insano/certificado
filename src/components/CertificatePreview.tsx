@@ -1,10 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Download, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Check, PenLine, Trash2 } from 'lucide-react';
 import { OfficialCertificateSettings, Recipient } from '../types';
 import { OfficialCertificateCard } from './OfficialCertificateCard';
 import { OfficialCertificateVerso } from './OfficialCertificateVerso';
 import { generate2PagePdfBlobForRecipient } from '../utils/pdfGenerator';
 import { saveAs } from 'file-saver';
+
+const DEFAULT_DIGITAL_SIGNATURE = '/assinatura-digital.png';
 
 interface CertificatePreviewProps {
   settings: OfficialCertificateSettings;
@@ -25,7 +27,6 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   const [isExporting, setIsExporting] = useState(false);
   const [copiedSuccess, setCopiedSuccess] = useState(false);
   const [digitalSignature, setDigitalSignature] = useState<string | null>(null);
-  const signatureInputRef = useRef<HTMLInputElement>(null);
 
   const currentRecipient = recipients[currentIndex] || recipients[0];
   const total = recipients.length;
@@ -33,11 +34,9 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({
   const handlePrev = () => currentIndex > 0 && onSelectIndex(currentIndex - 1);
   const handleNext = () => currentIndex < total - 1 && onSelectIndex(currentIndex + 1);
 
-  const handleSignatureFile = (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setDigitalSignature(String(reader.result || ''));
-    reader.readAsDataURL(file);
+  const handleDigitalSign = () => {
+    setDigitalSignature(DEFAULT_DIGITAL_SIGNATURE);
+    setActiveSide('frente');
   };
 
   const handleExport2PagePdf = async () => {
@@ -89,21 +88,14 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({
             </button>
           </div>
 
-          <button type="button" onClick={() => signatureInputRef.current?.click()} className="inline-flex items-center gap-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-medium px-3 py-1.5 transition">
+          <button
+            type="button"
+            onClick={handleDigitalSign}
+            className={`inline-flex items-center gap-1.5 border text-xs font-medium px-3 py-1.5 transition ${digitalSignature ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-800'}`}
+          >
             <PenLine className="w-3.5 h-3.5" />
-            <span>{digitalSignature ? 'Trocar assinatura' : 'Assinar digitalmente'}</span>
+            <span>{digitalSignature ? 'Assinatura aplicada' : 'Assinar digitalmente'}</span>
           </button>
-          <input
-            ref={signatureInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleSignatureFile(file);
-              e.currentTarget.value = '';
-            }}
-          />
 
           {digitalSignature && (
             <button type="button" onClick={() => setDigitalSignature(null)} className="inline-flex items-center gap-1 border border-red-200 bg-white hover:bg-red-50 text-red-700 text-xs font-medium px-2 py-1.5 transition" title="Remover assinatura digital">
