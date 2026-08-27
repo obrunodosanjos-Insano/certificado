@@ -30,7 +30,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col h-full overflow-hidden">
+    <div className="bg-white border border-slate-200 shadow-xs flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
           <Lock className="w-4 h-4 text-slate-700" />
@@ -42,7 +42,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
       </div>
 
       <div className="p-4 overflow-y-auto flex-1 space-y-3">
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-slate-700">
+        <div className="border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-slate-700">
           <strong>Somente estes 8 campos podem ser alterados.</strong> Logos, textos, assinatura, ornamentos, posições e demais elementos permanecem fixos.
         </div>
 
@@ -50,7 +50,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
           <label key={String(field)} className="block space-y-1">
             <span className="flex items-center gap-1.5 text-[11px] font-bold text-slate-800">
               {icon}{label}
-              <span className="ml-auto rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">EDITÁVEL</span>
+              <span className="ml-auto bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">EDITÁVEL</span>
             </span>
             <input
               type="text"
@@ -62,7 +62,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
               }}
               onBlur={(e) => field === 'certNumber' && change('certNumber', normalizeCode(e.target.value))}
               placeholder={placeholder}
-              className={`w-full rounded-lg border border-slate-300 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${uppercase ? 'uppercase' : ''}`}
+              className={`w-full border border-slate-300 bg-slate-50/70 px-3 py-2 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 ${uppercase ? 'uppercase' : ''}`}
             />
           </label>
         ))}

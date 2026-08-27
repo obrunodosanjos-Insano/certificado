@@ -6,7 +6,6 @@ import { ConfigurationPanel } from './components/ConfigurationPanel';
 import { DEFAULT_SETTINGS, DEFAULT_SAMPLE_15_RECIPIENTS } from './data/defaultConfig';
 import { OfficialCertificateSettings, Recipient } from './types';
 import { generateBatchZip, generateCombinedMultiPagePdf } from './utils/pdfGenerator';
-import { Eye, Users, Settings, Sparkles, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export function App() {
@@ -58,48 +57,45 @@ export function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-4">
         {/* Main View Switcher Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 bg-slate-200/70 p-1">
             <button
               type="button"
               onClick={() => setActiveMainView('preview')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                 activeMainView === 'preview'
-                  ? 'bg-white text-blue-700 shadow-xs'
+                  ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-4 h-4 text-blue-600" />
-              <span>Visualização do Certificado</span>
+              Visualização
             </button>
 
             <button
               type="button"
               onClick={() => setActiveMainView('batch')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                 activeMainView === 'batch'
-                  ? 'bg-white text-blue-700 shadow-xs'
+                  ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>Gerenciador de Lote ({recipients.length} Alunos)</span>
+              Lista de Alunos ({recipients.length})
             </button>
           </div>
 
-          <div className="flex items-center gap-2 px-3 text-xs text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Modelo: <strong>{settings.courseName}</strong></span>
+          <div className="text-xs text-slate-500 font-medium">
+            {currentRecipient?.name} ({currentIndex + 1}/{recipients.length})
           </div>
         </div>
 
         {/* Dynamic Layout according to Active View */}
         {activeMainView === 'preview' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left/Main Column: Realtime Interactive Preview Stage (7 cols) */}
-            <div className="lg:col-span-7 h-[680px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            {/* Left/Main Column: Realtime Interactive Preview Stage (8 cols) */}
+            <div className="lg:col-span-8 h-[670px]">
               <CertificatePreview
                 settings={settings}
                 recipients={recipients}
@@ -109,8 +105,8 @@ export function App() {
               />
             </div>
 
-            {/* Right Column: Editable Dynamic & Fixed Fields (5 cols) */}
-            <div className="lg:col-span-5 h-[680px]">
+            {/* Right Column: Editable Fields (4 cols) */}
+            <div className="lg:col-span-4 h-[670px]">
               <ConfigurationPanel
                 recipient={currentRecipient}
                 settings={settings}
@@ -121,7 +117,7 @@ export function App() {
             </div>
           </div>
         ) : (
-          /* Full Batch Table & Fast Multi-Generation View */
+          /* Full Batch Table View */
           <div className="h-[720px]">
             <BatchManager
               recipients={recipients}

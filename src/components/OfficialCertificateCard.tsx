@@ -1,6 +1,6 @@
 import React from 'react';
 import { OfficialCertificateSettings, Recipient } from '../types';
-import { CertificateCorner, TopFlourish, BottomSubtitleFlourish } from './CertificateOrnaments';
+import { TopFlourish, BottomSubtitleFlourish } from './CertificateOrnaments';
 
 interface OfficialCertificateCardProps {
   recipient: Recipient;
@@ -36,14 +36,10 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
   return (
     <div id={id} style={{ width: '892px', height: '621px', transform: scale !== 1 ? `scale(${scale})` : undefined, transformOrigin: 'top left' }} className="relative overflow-hidden bg-white text-black select-none">
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[10px] left-[92px] right-[92px] border-t-[3px] border-black" />
-        <div className="absolute top-[16px] left-[92px] right-[92px] border-t border-black" />
-        <div className="absolute bottom-[10px] left-[92px] right-[92px] border-b-[3px] border-black" />
-        <div className="absolute bottom-[16px] left-[92px] right-[92px] border-b border-black" />
-        <CertificateCorner position="top-left" className="absolute left-[10px] top-[8px] w-[75px] h-[75px] text-black" />
-        <CertificateCorner position="top-right" className="absolute right-[10px] top-[8px] w-[75px] h-[75px] text-black" />
-        <CertificateCorner position="bottom-left" className="absolute left-[10px] bottom-[8px] w-[75px] h-[75px] text-black" />
-        <CertificateCorner position="bottom-right" className="absolute right-[10px] bottom-[8px] w-[75px] h-[75px] text-black" />
+        <div className="absolute top-[10px] left-[24px] right-[24px] border-t-[3px] border-black" />
+        <div className="absolute top-[16px] left-[24px] right-[24px] border-t border-black" />
+        <div className="absolute bottom-[10px] left-[24px] right-[24px] border-b-[3px] border-black" />
+        <div className="absolute bottom-[16px] left-[24px] right-[24px] border-b border-black" />
       </div>
 
       {/* LOGOS OFICIAIS FIXOS: nunca são lidos de configurações editáveis. */}
