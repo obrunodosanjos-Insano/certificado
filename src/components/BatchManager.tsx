@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { FileArchive, Layers, Plus, Trash2, Upload, Users } from 'lucide-react';
+import { Download, FileArchive, Layers, Plus, Trash2, Upload, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { OfficialCertificateSettings, Recipient } from '../types';
 import { generateBatchZip, generateCombinedMultiPagePdf } from '../utils/pdfGenerator';
@@ -14,6 +14,7 @@ interface BatchManagerProps {
 
 const START_CERTIFICATE_NUMBER = 6;
 const CERTIFICATE_SUFFIX = '/CVTE/2026';
+const TEMPLATE_ROWS = 50;
 
 const certificateCodeForIndex = (index: number) =>
   `${String(START_CERTIFICATE_NUMBER + index).padStart(3, '0')}${CERTIFICATE_SUFFIX}`;
@@ -58,6 +59,47 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
 
   const update = (id: string, field: keyof Recipient, value: string) => {
     onUpdateRecipients(recipients.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  };
+
+  const downloadExcelTemplate = () => {
+    const headers = [
+      'Nº CERTIFICADO',
+      'NOME',
+      'CPF',
+      'Nº REGISTRO',
+      'CATEGORIA',
+      'PERÍODO',
+      'CARGA',
+      'DATA EMISSÃO',
+    ];
+
+    const rows = Array.from({ length: TEMPLATE_ROWS }, (_, index) => [
+      certificateCodeForIndex(index),
+      index === 0 ? 'CARLOS HENRIQUE CAETANO DA SILVA' : '',
+      index === 0 ? '067.440.731-84' : '',
+      index === 0 ? '07575025319' : '',
+      index === 0 ? 'AD' : '',
+      index === 0 ? '08 a 16 de junho de 2026' : '',
+      index === 0 ? '50h/a' : '',
+      index === 0 ? '18 de junho de 2026' : '',
+    ]);
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    worksheet['!cols'] = [
+      { wch: 20 },
+      { wch: 36 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 30 },
+      { wch: 12 },
+      { wch: 24 },
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Certificados');
+    XLSX.writeFile(workbook, 'modelo_importacao_certificados.xlsx');
+    setProgress('Planilha modelo baixada. Preencha os dados e importe o mesmo arquivo no aplicativo.');
   };
 
   const addRecipient = () => {
@@ -115,7 +157,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
 
   const importExcel = async (file: File) => {
     try {
-      setProgress('Lendo planilha Excel...');
+      setProgress('Lendo planilha Excel e carregando os dados...');
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -158,10 +200,10 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
       const numbered = renumberRecipients(imported);
       onUpdateRecipients(numbered);
       onSelectIndex(0);
-      setProgress(`${numbered.length} certificado(s) importado(s). Numeração automática: 006 até ${String(START_CERTIFICATE_NUMBER + numbered.length - 1).padStart(3, '0')}.`);
+      setProgress(`${numbered.length} certificado(s) carregado(s) automaticamente da planilha. Numeração: 006 até ${String(START_CERTIFICATE_NUMBER + numbered.length - 1).padStart(3, '0')}.`);
     } catch (error) {
       console.error(error);
-      setProgress('Erro ao importar a planilha. Confira os títulos das colunas e tente novamente.');
+      setProgress('Erro ao importar a planilha. Use a planilha modelo disponibilizada pelo aplicativo.');
     }
   };
 
@@ -196,12 +238,15 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           <Users className="w-5 h-5 text-blue-700" />
           <div>
             <h2 className="font-bold text-slate-900">Geração em lote</h2>
-            <p className="text-xs text-slate-500">Numeração automática crescente: 006/CVTE/2026, 007/CVTE/2026, 008/CVTE/2026...</p>
+            <p className="text-xs text-slate-500">Baixe o modelo, preencha no Excel e importe: os dados entram automaticamente no aplicativo.</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <button onClick={downloadExcelTemplate} className="px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
+            <Download className="w-3.5 h-3.5" /> Baixar planilha modelo
+          </button>
           <button onClick={() => fileInputRef.current?.click()} className="px-3 py-2 rounded-lg border text-xs font-semibold flex items-center gap-1.5">
-            <Upload className="w-3.5 h-3.5" /> Importar Excel/CSV
+            <Upload className="w-3.5 h-3.5" /> Importar planilha preenchida
           </button>
           <input
             ref={fileInputRef}
@@ -221,7 +266,10 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
       </div>
 
       <div className="px-4 py-3 bg-slate-50 border-b flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs text-slate-600">{progress || `${recipients.length} certificado(s)`}</span>
+        <div className="text-xs text-slate-600">
+          <div>{progress || `${recipients.length} certificado(s)`}</div>
+          <div className="mt-1 text-[11px] text-slate-500">Numeração automática: 006/CVTE/2026, 007/CVTE/2026, 008/CVTE/2026...</div>
+        </div>
         <div className="flex gap-2">
           <button disabled={isGenerating} onClick={() => run('pdf')} className="px-3 py-2 rounded-lg border bg-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50">
             <Layers className="w-3.5 h-3.5" /> PDF único
