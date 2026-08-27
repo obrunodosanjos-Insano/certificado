@@ -44,7 +44,6 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
         <div className="absolute bottom-[16px] left-[24px] right-[24px] border-b border-black" />
       </div>
 
-      {/* LOGOS OFICIAIS FIXOS: nunca são lidos de configurações editáveis. */}
       <img src="/sgex-logo.jpg" alt="SGEx" className="absolute left-[80px] top-[50px] z-10 w-[64px] h-[89px] object-contain" draggable={false} />
       <img src="/badm-qgex-logo.jpg" alt="B ADM QGEX" className="absolute left-[730px] top-[55px] z-10 w-[63px] h-[89px] object-contain" draggable={false} />
 
@@ -65,11 +64,17 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
       <div className="absolute left-0 top-[449px] w-full text-center z-10 font-serif text-[16px] font-bold">Brasília-DF, <Dynamic>{data}</Dynamic></div>
 
       <div className="absolute left-[82px] bottom-[56px] z-10 w-[180px] text-center">
-        <div className="relative h-[42px] flex items-center justify-center overflow-hidden">
+        <div className="relative h-[44px] overflow-visible">
           {digitalSignature ? (
-            <img src={digitalSignature} alt="Assinatura digital" className="max-w-[170px] max-h-[40px] object-contain" draggable={false} />
+            <img
+              src={digitalSignature}
+              alt="Assinatura digital"
+              draggable={false}
+              className="absolute left-1/2 bottom-[-2px] w-[196px] h-[58px] max-w-none object-contain pointer-events-none"
+              style={{ transform: 'translateX(-50%)' }}
+            />
           ) : (
-            <div className="h-[36px] w-full" aria-label="Espaço reservado para assinatura" />
+            <div className="h-[42px] w-full" aria-label="Espaço reservado para assinatura" />
           )}
         </div>
         <div className="border-b border-black" />
