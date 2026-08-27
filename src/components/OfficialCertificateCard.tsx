@@ -70,8 +70,8 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
               src={digitalSignature}
               alt="Assinatura digital"
               draggable={false}
-              className="absolute left-1/2 bottom-[-20px] w-[198px] h-[60px] max-w-none object-contain pointer-events-none"
-              style={{ transform: 'translateX(-50%)' }}
+              className="absolute left-1/2 bottom-[-24px] w-[202px] h-[64px] max-w-none object-contain pointer-events-none"
+              style={{ transform: 'translateX(-50%) scaleY(1.06)' }}
             />
           ) : (
             <div className="h-[42px] w-full" aria-label="Espaço reservado para assinatura" />
