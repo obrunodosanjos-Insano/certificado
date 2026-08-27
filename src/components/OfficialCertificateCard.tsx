@@ -8,6 +8,7 @@ interface OfficialCertificateCardProps {
   highlightFields?: boolean;
   scale?: number;
   id?: string;
+  digitalSignature?: string | null;
 }
 
 /** MODELO OFICIAL BLOQUEADO: somente os 8 campos do Recipient podem variar. */
@@ -15,6 +16,7 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
   recipient,
   scale = 1,
   id = 'official-certificate-element',
+  digitalSignature = null,
 }) => {
   const rawNumber = (recipient.certNumber || '006/CVTE/2026').trim();
   const certFullCode = rawNumber.includes('/')
@@ -63,11 +65,12 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
       <div className="absolute left-0 top-[449px] w-full text-center z-10 font-serif text-[16px] font-bold">Brasília-DF, <Dynamic>{data}</Dynamic></div>
 
       <div className="absolute left-[82px] bottom-[56px] z-10 w-[180px] text-center">
-        <div className="relative h-[42px] flex items-center justify-center">
-          <svg viewBox="0 0 200 60" className="w-[170px] h-[48px] overflow-visible">
-            <path d="M10,40 Q25,10 40,35 T70,25 T95,45 Q115,5 130,30 T160,28 Q175,15 190,38" fill="none" stroke="#1d3557" strokeWidth="1.8" strokeLinecap="round" />
-            <path d="M35,28 C50,15 65,45 80,20 C95,35 110,10 125,32 C140,18 155,40 170,25" fill="none" stroke="#1d3557" strokeWidth="1.2" />
-          </svg>
+        <div className="relative h-[42px] flex items-center justify-center overflow-hidden">
+          {digitalSignature ? (
+            <img src={digitalSignature} alt="Assinatura digital" className="max-w-[170px] max-h-[40px] object-contain" draggable={false} />
+          ) : (
+            <div className="h-[36px] w-full" aria-label="Espaço reservado para assinatura" />
+          )}
         </div>
         <div className="border-b border-black" />
         <div className="mt-1 font-sans text-[11px] font-bold">Carlos Henrique Ferreira De Mello</div>
