@@ -12,10 +12,11 @@ interface BatchManagerProps {
   onUpdateRecipients: (recipients: Recipient[]) => void;
 }
 
-const normalizeCode = (value: string) => {
-  const raw = value.trim();
-  return raw.includes('/') ? raw : `${raw.padStart(3, '0')}/CVTE/2026`;
-};
+const START_CERTIFICATE_NUMBER = 6;
+const CERTIFICATE_SUFFIX = '/CVTE/2026';
+
+const certificateCodeForIndex = (index: number) =>
+  `${String(START_CERTIFICATE_NUMBER + index).padStart(3, '0')}${CERTIFICATE_SUFFIX}`;
 
 const normalizeHeader = (value: unknown) =>
   String(value ?? '')
@@ -37,6 +38,13 @@ const readByAliases = (row: Record<string, unknown>, aliases: string[]) => {
   return '';
 };
 
+const renumberRecipients = (items: Recipient[]): Recipient[] =>
+  items.map((item, index) => ({
+    ...item,
+    certNumber: certificateCodeForIndex(index),
+    year: '2026',
+  }));
+
 export const BatchManager: React.FC<BatchManagerProps> = ({
   recipients,
   settings,
@@ -53,10 +61,9 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
   };
 
   const addRecipient = () => {
-    const next = String(recipients.length + 1).padStart(3, '0');
     const item: Recipient = {
       id: `rec-${Date.now()}`,
-      certNumber: `${next}/CVTE/2026`,
+      certNumber: certificateCodeForIndex(recipients.length),
       year: '2026',
       name: 'NOVO PARTICIPANTE',
       cpf: '000.000.000-00',
@@ -66,13 +73,13 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
       cargaHoraria: '50h/a',
       dataEmissao: '18 de junho de 2026',
     };
-    onUpdateRecipients([...recipients, item]);
+    onUpdateRecipients(renumberRecipients([...recipients, item]));
     onSelectIndex(recipients.length);
   };
 
   const removeRecipient = (id: string) => {
     if (recipients.length <= 1) return;
-    const next = recipients.filter((r) => r.id !== id);
+    const next = renumberRecipients(recipients.filter((r) => r.id !== id));
     onUpdateRecipients(next);
     if (currentIndex >= next.length) onSelectIndex(next.length - 1);
   };
@@ -86,7 +93,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
         const p = line.split(/[;,|\t]/).map((v) => v.trim());
         return {
           id: `import-${Date.now()}-${i}`,
-          certNumber: normalizeCode(p[7] || String(recipients.length + i + 1).padStart(3, '0')),
+          certNumber: certificateCodeForIndex(i),
           year: '2026',
           name: (p[0] || `PARTICIPANTE ${i + 1}`).toUpperCase(),
           cpf: p[1] || '000.000.000-00',
@@ -97,7 +104,11 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           dataEmissao: p[6] || '18 de junho de 2026',
         };
       });
-      if (imported.length) onUpdateRecipients([...recipients, ...imported]);
+      if (imported.length) {
+        onUpdateRecipients(renumberRecipients(imported));
+        onSelectIndex(0);
+        setProgress(`${imported.length} certificado(s) importado(s) e numerado(s) a partir de 006.`);
+      }
     };
     reader.readAsText(file);
   };
@@ -117,7 +128,6 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
 
       const imported: Recipient[] = rows
         .map((row, i) => {
-          const certNumber = readByAliases(row, ['Nº CERTIFICADO', 'N CERTIFICADO', 'NUMERO CERTIFICADO', 'CERTIFICADO']);
           const name = readByAliases(row, ['NOME', 'NOME COMPLETO']);
           const cpf = readByAliases(row, ['CPF']);
           const registro = readByAliases(row, ['Nº REGISTRO', 'N REGISTRO', 'REGISTRO']);
@@ -126,11 +136,11 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           const carga = readByAliases(row, ['CARGA', 'CARGA HORÁRIA', 'CARGA HORARIA']);
           const emissao = readByAliases(row, ['DATA EMISSÃO', 'DATA EMISSAO', 'EMISSÃO', 'EMISSAO']);
 
-          if (![certNumber, name, cpf, registro, categoria, periodo, carga, emissao].some(Boolean)) return null;
+          if (![name, cpf, registro, categoria, periodo, carga, emissao].some(Boolean)) return null;
 
           return {
             id: `excel-${Date.now()}-${i}`,
-            certNumber: normalizeCode(certNumber || String(recipients.length + i + 1).padStart(3, '0')),
+            certNumber: certificateCodeForIndex(i),
             year: '2026',
             name: (name || `PARTICIPANTE ${i + 1}`).toUpperCase(),
             cpf: cpf || '000.000.000-00',
@@ -145,9 +155,10 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
 
       if (!imported.length) throw new Error('Nenhuma linha válida foi encontrada na planilha.');
 
-      onUpdateRecipients(imported);
+      const numbered = renumberRecipients(imported);
+      onUpdateRecipients(numbered);
       onSelectIndex(0);
-      setProgress(`${imported.length} certificado(s) importado(s) do Excel.`);
+      setProgress(`${numbered.length} certificado(s) importado(s). Numeração automática: 006 até ${String(START_CERTIFICATE_NUMBER + numbered.length - 1).padStart(3, '0')}.`);
     } catch (error) {
       console.error(error);
       setProgress('Erro ao importar a planilha. Confira os títulos das colunas e tente novamente.');
@@ -164,9 +175,11 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
     try {
       setIsGenerating(true);
       setProgress('Preparando certificados...');
+      const numbered = renumberRecipients(recipients);
+      onUpdateRecipients(numbered);
       const cb = (_c: number, _t: number, text: string) => setProgress(text);
-      if (kind === 'zip') await generateBatchZip(recipients, settings, cb);
-      else await generateCombinedMultiPagePdf(recipients, settings, cb);
+      if (kind === 'zip') await generateBatchZip(numbered, settings, cb);
+      else await generateCombinedMultiPagePdf(numbered, settings, cb);
       setProgress('Concluído.');
     } catch (error) {
       console.error(error);
@@ -183,7 +196,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           <Users className="w-5 h-5 text-blue-700" />
           <div>
             <h2 className="font-bold text-slate-900">Geração em lote</h2>
-            <p className="text-xs text-slate-500">Importe uma planilha Excel ou edite somente os 8 campos autorizados.</p>
+            <p className="text-xs text-slate-500">Numeração automática crescente: 006/CVTE/2026, 007/CVTE/2026, 008/CVTE/2026...</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -237,7 +250,7 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           <tbody>
             {recipients.map((r, index) => (
               <tr key={r.id} onClick={() => onSelectIndex(index)} className={`border-b border-slate-100 ${index === currentIndex ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
-                <td className="p-2"><input value={r.certNumber} onBlur={(e) => update(r.id, 'certNumber', normalizeCode(e.target.value))} onChange={(e) => update(r.id, 'certNumber', e.target.value)} className="w-full border rounded px-2 py-1.5 font-mono" /></td>
+                <td className="p-2"><input value={certificateCodeForIndex(index)} readOnly title="Numeração automática" className="w-full border rounded px-2 py-1.5 font-mono bg-slate-50 text-slate-700 cursor-not-allowed" /></td>
                 <td className="p-2"><input value={r.name} onChange={(e) => update(r.id, 'name', e.target.value.toUpperCase())} className="w-full border rounded px-2 py-1.5 font-semibold uppercase" /></td>
                 <td className="p-2"><input value={r.cpf} onChange={(e) => update(r.id, 'cpf', e.target.value)} className="w-full border rounded px-2 py-1.5" /></td>
                 <td className="p-2"><input value={r.cnhRegistro} onChange={(e) => update(r.id, 'cnhRegistro', e.target.value)} className="w-full border rounded px-2 py-1.5" /></td>
