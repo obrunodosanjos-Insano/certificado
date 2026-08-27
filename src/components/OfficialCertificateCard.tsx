@@ -70,7 +70,7 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
               src={digitalSignature}
               alt="Assinatura digital"
               draggable={false}
-              className="absolute left-1/2 bottom-[-2px] w-[196px] h-[58px] max-w-none object-contain pointer-events-none"
+              className="absolute left-1/2 bottom-[-11px] w-[198px] h-[60px] max-w-none object-contain pointer-events-none"
               style={{ transform: 'translateX(-50%)' }}
             />
           ) : (
