@@ -44,8 +44,12 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
         <div className="absolute bottom-[16px] left-[24px] right-[24px] border-b border-black" />
       </div>
 
-      <img src="/sgex-logo.jpg" alt="SGEx" className="absolute left-[80px] top-[50px] z-10 w-[64px] h-[89px] object-contain" draggable={false} />
-      <img src="/badm-qgex-logo.jpg" alt="B ADM QGEX" className="absolute left-[730px] top-[55px] z-10 w-[63px] h-[89px] object-contain" draggable={false} />
+      <div className="absolute left-[72px] top-[46px] z-10 w-[82px] h-[96px] flex items-center justify-center">
+        <img src="/sgex-logo.jpg" alt="SGEx" className="w-full h-full object-contain" draggable={false} />
+      </div>
+      <div className="absolute left-[720px] top-[46px] z-10 w-[82px] h-[96px] flex items-center justify-center">
+        <img src="/badm-qgex-logo.jpg" alt="B ADM QGEX" className="w-full h-full object-contain" draggable={false} />
+      </div>
 
       <div className="absolute left-[300px] top-[8px] w-[300px] text-center z-10">
         <TopFlourish className="mx-auto w-[170px] h-[45px] text-black" />
