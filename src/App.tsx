@@ -87,7 +87,7 @@ export function App() {
           </div>
 
           <div className="text-xs text-slate-500 font-medium">
-            {currentRecipient?.name} ({currentIndex + 1}/{recipients.length})
+            {currentRecipient?.name ? `${currentRecipient.name} ` : ''}({currentIndex + 1}/{recipients.length})
           </div>
         </div>
 

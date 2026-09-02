@@ -23,13 +23,13 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
     ? rawNumber
     : `${rawNumber.padStart(3, '0')}/CVTE/2026`;
 
-  const name = recipient.name || 'CARLOS HENRIQUE CAETANO DA SILVA';
-  const cpf = recipient.cpf || '067.440.731-84';
-  const registro = recipient.cnhRegistro || '07575025319';
-  const categoria = (recipient.cnhCategoria || 'AD').replace(/[“”]/g, '');
-  const periodo = recipient.periodo || '08 a 16 de junho de 2026';
-  const carga = recipient.cargaHoraria || '50h/a';
-  const data = recipient.dataEmissao || '18 de junho de 2026';
+  const name = recipient.name || '';
+  const cpf = recipient.cpf || '';
+  const registro = recipient.cnhRegistro || '';
+  const categoria = (recipient.cnhCategoria || '').replace(/[“”]/g, '');
+  const periodo = recipient.periodo || '';
+  const carga = recipient.cargaHoraria || '';
+  const data = recipient.dataEmissao || '';
 
   const Dynamic: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <span className="font-bold text-black">{children}</span>
@@ -62,10 +62,12 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
 
       <div className="absolute left-[46px] top-[230px] right-[46px] z-10 font-serif text-[14.5px] leading-[1.78] text-black text-justify">
         A Instituição de Ensino de Trânsito da Base Administrativa do Quartel-General do Exército – Forte Caxias –
-        (Instrução Nº 592, de 10 de agosto de 2020/Detran-DF) certifica que <Dynamic>{name}</Dynamic>, inscrito no CPF nº <Dynamic>{cpf}</Dynamic> e no Nº REGISTRO <Dynamic>{registro}</Dynamic>, categoria <Dynamic>“{categoria}”</Dynamic>, concluiu com aproveitamento o <strong>Curso Especializado para Condutores de Veículos de Transporte de Emergência</strong>, ministrado pela IET - Forte Caxias, no período de <Dynamic>{periodo}</Dynamic>, com carga horária de <Dynamic>{carga}</Dynamic>, com validade de cinco anos após o término do curso, conforme Resolução Nº 1.020/2025 do CONTRAN.
+        (Instrução Nº 592, de 10 de agosto de 2020/Detran-DF) certifica que <Dynamic>{name}</Dynamic>, inscrito no CPF nº <Dynamic>{cpf}</Dynamic> e no Nº REGISTRO <Dynamic>{registro}</Dynamic>, categoria <Dynamic>{categoria ? `“${categoria}”` : ''}</Dynamic>, concluiu com aproveitamento o <strong>Curso Especializado para Condutores de Veículos de Transporte de Emergência</strong>, ministrado pela IET - Forte Caxias, no período de <Dynamic>{periodo}</Dynamic>, com carga horária de <Dynamic>{carga}</Dynamic>, com validade de cinco anos após o término do curso, conforme Resolução Nº 1.020/2025 do CONTRAN.
       </div>
 
-      <div className="absolute left-0 top-[449px] w-full text-center z-10 font-serif text-[16px] font-bold">Brasília-DF, <Dynamic>{data}</Dynamic></div>
+      <div className="absolute left-0 top-[449px] w-full text-center z-10 font-serif text-[16px] font-bold">
+        {data ? <>Brasília-DF, <Dynamic>{data}</Dynamic></> : 'Brasília-DF,'}
+      </div>
 
       <div className="absolute left-[82px] bottom-[56px] z-10 w-[180px] text-center">
         <div className="relative h-[44px] overflow-visible">
@@ -74,8 +76,8 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
               src={digitalSignature}
               alt="Assinatura digital"
               draggable={false}
-              className="absolute left-1/2 bottom-[-24px] w-[202px] h-[64px] max-w-none object-contain pointer-events-none"
-              style={{ transform: 'translateX(-50%) scaleY(1.06)' }}
+              className="absolute left-1/2 bottom-[-20px] w-[198px] h-[60px] max-w-none object-contain pointer-events-none"
+              style={{ transform: 'translateX(-50%)' }}
             />
           ) : (
             <div className="h-[42px] w-full" aria-label="Espaço reservado para assinatura" />

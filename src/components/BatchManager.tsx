@@ -75,13 +75,13 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
 
     const rows = Array.from({ length: TEMPLATE_ROWS }, (_, index) => [
       certificateCodeForIndex(index),
-      index === 0 ? 'CARLOS HENRIQUE CAETANO DA SILVA' : '',
-      index === 0 ? '067.440.731-84' : '',
-      index === 0 ? '07575025319' : '',
-      index === 0 ? 'AD' : '',
-      index === 0 ? '08 a 16 de junho de 2026' : '',
-      index === 0 ? '50h/a' : '',
-      index === 0 ? '18 de junho de 2026' : '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -107,13 +107,13 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
       id: `rec-${Date.now()}`,
       certNumber: certificateCodeForIndex(recipients.length),
       year: '2026',
-      name: 'NOVO PARTICIPANTE',
-      cpf: '000.000.000-00',
-      cnhRegistro: '00000000000',
-      cnhCategoria: 'AD',
-      periodo: '08 a 16 de junho de 2026',
-      cargaHoraria: '50h/a',
-      dataEmissao: '18 de junho de 2026',
+      name: '',
+      cpf: '',
+      cnhRegistro: '',
+      cnhCategoria: '',
+      periodo: '',
+      cargaHoraria: '',
+      dataEmissao: '',
     };
     onUpdateRecipients(renumberRecipients([...recipients, item]));
     onSelectIndex(recipients.length);
@@ -137,13 +137,13 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
           id: `import-${Date.now()}-${i}`,
           certNumber: certificateCodeForIndex(i),
           year: '2026',
-          name: (p[0] || `PARTICIPANTE ${i + 1}`).toUpperCase(),
-          cpf: p[1] || '000.000.000-00',
-          cnhRegistro: p[2] || '00000000000',
-          cnhCategoria: (p[3] || 'AD').replace(/[“”]/g, '').toUpperCase(),
-          periodo: p[4] || '08 a 16 de junho de 2026',
-          cargaHoraria: p[5] || '50h/a',
-          dataEmissao: p[6] || '18 de junho de 2026',
+          name: (p[0] || '').toUpperCase(),
+          cpf: p[1] || '',
+          cnhRegistro: p[2] || '',
+          cnhCategoria: (p[3] || '').replace(/[“”]/g, '').toUpperCase(),
+          periodo: p[4] || '',
+          cargaHoraria: p[5] || '',
+          dataEmissao: p[6] || '',
         };
       });
       if (imported.length) {
@@ -184,13 +184,13 @@ export const BatchManager: React.FC<BatchManagerProps> = ({
             id: `excel-${Date.now()}-${i}`,
             certNumber: certificateCodeForIndex(i),
             year: '2026',
-            name: (name || `PARTICIPANTE ${i + 1}`).toUpperCase(),
-            cpf: cpf || '000.000.000-00',
-            cnhRegistro: registro || '00000000000',
-            cnhCategoria: (categoria || 'AD').replace(/[“”]/g, '').toUpperCase(),
-            periodo: periodo || '08 a 16 de junho de 2026',
-            cargaHoraria: carga || '50h/a',
-            dataEmissao: emissao || '18 de junho de 2026',
+            name: (name || '').toUpperCase(),
+            cpf: cpf || '',
+            cnhRegistro: registro || '',
+            cnhCategoria: (categoria || '').replace(/[“”]/g, '').toUpperCase(),
+            periodo: periodo || '',
+            cargaHoraria: carga || '',
+            dataEmissao: emissao || '',
           } as Recipient;
         })
         .filter((item): item is Recipient => Boolean(item));
