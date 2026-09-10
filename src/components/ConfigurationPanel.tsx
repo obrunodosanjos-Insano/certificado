@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, Lock, UserCheck } from 'lucide-react';
+import { Calendar, Clock, Lock, UserCheck, Users } from 'lucide-react';
 import { OfficialCertificateSettings, Recipient } from '../types';
 
 interface ConfigurationPanelProps {
@@ -15,8 +15,20 @@ const normalizeCode = (value: string) => {
   return raw.includes('/') ? raw : `${raw.padStart(3, '0')}/CVTE/2026`;
 };
 
-export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipient, onUpdateRecipient }) => {
+export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
+  recipient,
+  settings,
+  onUpdateRecipient,
+  onUpdateSettings,
+}) => {
   const change = (field: keyof Recipient, value: string) => onUpdateRecipient({ ...recipient, [field]: value });
+
+  const changeInstructor = (index: number, value: string) => {
+    const defaultDisciplines = settings.defaultDisciplines.map((discipline, i) =>
+      i === index ? { ...discipline, instrutor: value.toUpperCase() } : discipline,
+    );
+    onUpdateSettings({ ...settings, defaultDisciplines });
+  };
 
   const fields: Array<{ field: keyof Recipient; label: string; placeholder: string; icon?: React.ReactNode; uppercase?: boolean }> = [
     { field: 'certNumber', label: 'Número do certificado', placeholder: '006/CVTE/2026' },
@@ -36,14 +48,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
           <Lock className="w-4 h-4 text-slate-700" />
           <div>
             <h2 className="text-sm font-bold text-slate-900">Dados do certificado</h2>
-            <p className="text-[11px] text-slate-500">Modelo oficial bloqueado</p>
+            <p className="text-[11px] text-slate-500">Modelo oficial com campos controlados</p>
           </div>
         </div>
       </div>
 
       <div className="p-4 overflow-y-auto flex-1 space-y-3">
         <div className="border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-slate-700">
-          <strong>Somente estes 8 campos podem ser alterados.</strong> Logos, textos, assinatura, ornamentos, posições e demais elementos permanecem fixos.
+          <strong>Campos editáveis:</strong> dados do aluno/certificado e nomes dos instrutores do verso. Logos, textos institucionais, ornamentos e posições permanecem fixos.
         </div>
 
         {fields.map(({ field, label, placeholder, icon, uppercase }) => (
@@ -66,6 +78,31 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({ recipien
             />
           </label>
         ))}
+
+        <div className="pt-3 mt-4 border-t border-slate-200">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-blue-700" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">Instrutores do verso</h3>
+              <p className="text-[10px] text-slate-500">A alteração vale para todos os certificados gerados.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {settings.defaultDisciplines.map((discipline, index) => (
+              <label key={discipline.id || index} className="block space-y-1">
+                <span className="text-[10px] font-bold text-slate-700">{discipline.name}</span>
+                <input
+                  type="text"
+                  value={discipline.instrutor || ''}
+                  onChange={(e) => changeInstructor(index, e.target.value)}
+                  placeholder="NOME DO INSTRUTOR"
+                  className="w-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
