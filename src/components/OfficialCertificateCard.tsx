@@ -1,6 +1,6 @@
 import React from 'react';
 import { OfficialCertificateSettings, Recipient } from '../types';
-import { TopFlourish, BottomSubtitleFlourish } from './CertificateOrnaments';
+import { TopFlourish, BottomSubtitleFlourish, CertificateFrame, CertificateBackground } from './CertificateOrnaments';
 
 interface OfficialCertificateCardProps {
   recipient: Recipient;
@@ -37,12 +37,8 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
 
   return (
     <div id={id} style={{ width: '892px', height: '621px', transform: scale !== 1 ? `scale(${scale})` : undefined, transformOrigin: 'top left' }} className="relative overflow-hidden bg-white text-black select-none">
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[10px] left-[24px] right-[24px] border-t-[3px] border-black" />
-        <div className="absolute top-[16px] left-[24px] right-[24px] border-t border-black" />
-        <div className="absolute bottom-[10px] left-[24px] right-[24px] border-b-[3px] border-black" />
-        <div className="absolute bottom-[16px] left-[24px] right-[24px] border-b border-black" />
-      </div>
+      <CertificateBackground />
+      <CertificateFrame inset={8} />
 
       <div className="absolute left-[72px] top-[46px] z-10 w-[82px] h-[96px] flex items-center justify-center">
         <img src="/sgex-logo.jpg" alt="SGEx" className="w-full h-full object-contain" draggable={false} />
