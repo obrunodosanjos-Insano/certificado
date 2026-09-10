@@ -17,7 +17,10 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
 }) => {
   const rawCode = (recipient.certNumber || '006/CVTE/2026').trim();
   const certFullCode = rawCode.includes('/') ? rawCode : `${rawCode.padStart(3, '0')}/CVTE/2026`;
-  const disciplines = recipient.disciplinas || settings.defaultDisciplines;
+  const disciplines = (recipient.disciplinas || settings.defaultDisciplines).map((discipline, index) => ({
+    ...discipline,
+    instrutor: settings.defaultDisciplines[index]?.instrutor || discipline.instrutor,
+  }));
 
   return (
     <div
