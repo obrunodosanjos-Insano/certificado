@@ -15,7 +15,7 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
   scale = 1,
   id = 'official-certificate-verso-element',
 }) => {
-  const rawCode = (recipient.certNumber || '006/CVTE/2026').trim();
+  const rawCode = (settings?.turmaNumber || recipient.certNumber || '006/CVTE/2026').trim();
   const certFullCode = rawCode.includes('/') ? rawCode : `${rawCode.padStart(3, '0')}/CVTE/2026`;
   const disciplines = (recipient.disciplinas || settings.defaultDisciplines).map((discipline, index) => ({
     ...discipline,

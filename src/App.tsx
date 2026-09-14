@@ -17,6 +17,11 @@ export function App() {
 
   const currentRecipient = recipients[currentIndex] || recipients[0];
 
+  const handleUpdateTurmaNumber = (newTurma: string) => {
+    setSettings((prev) => ({ ...prev, turmaNumber: newTurma }));
+    setRecipients((prev) => prev.map((r) => ({ ...r, certNumber: newTurma })));
+  };
+
   const handleUpdateCurrentRecipient = (updated: Recipient) => {
     const newRecipients = recipients.map((r, i) => (i === currentIndex ? updated : r));
     setRecipients(newRecipients);
@@ -112,6 +117,7 @@ export function App() {
                 settings={settings}
                 onUpdateRecipient={handleUpdateCurrentRecipient}
                 onUpdateSettings={setSettings}
+                onUpdateTurmaNumber={handleUpdateTurmaNumber}
                 totalRecipients={recipients.length}
               />
             </div>
@@ -128,6 +134,7 @@ export function App() {
                 setActiveMainView('preview');
               }}
               onUpdateRecipients={setRecipients}
+              onUpdateTurmaNumber={handleUpdateTurmaNumber}
             />
           </div>
         )}

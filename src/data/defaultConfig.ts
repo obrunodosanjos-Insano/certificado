@@ -32,6 +32,7 @@ export const DEFAULT_DISCIPLINES: Discipline[] = [
 ];
 
 export const DEFAULT_SETTINGS: OfficialCertificateSettings = {
+  turmaNumber: '006/CVTE/2026',
   certCodePrefix: 'CVTE',
   title: 'CERTIFICADO',
   subtitle: 'Condutores de Veículos de\nTransporte de Emergência',

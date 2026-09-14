@@ -23,6 +23,7 @@ export interface Recipient {
 }
 
 export interface OfficialCertificateSettings {
+  turmaNumber: string; // Ex: "006/CVTE/2026"
   certCodePrefix: string; // "CVTE" -> "006/CVTE/2026"
   title: string; // "CERTIFICADO"
   subtitle: string; // "Condutores de Veículos de\nTransporte de Emergência"

@@ -14,11 +14,12 @@ interface OfficialCertificateCardProps {
 /** MODELO OFICIAL BLOQUEADO: somente os 8 campos do Recipient podem variar. */
 export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = ({
   recipient,
+  settings,
   scale = 1,
   id = 'official-certificate-element',
   digitalSignature = null,
 }) => {
-  const rawNumber = (recipient.certNumber || '006/CVTE/2026').trim();
+  const rawNumber = (settings?.turmaNumber || recipient.certNumber || '006/CVTE/2026').trim();
   const certFullCode = rawNumber.includes('/')
     ? rawNumber
     : `${rawNumber.padStart(3, '0')}/CVTE/2026`;

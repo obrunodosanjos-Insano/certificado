@@ -3,31 +3,404 @@ import { Download, FileArchive, Layers, Plus, Trash2, Upload, Users } from 'luci
 import * as XLSX from 'xlsx';
 import { OfficialCertificateSettings, Recipient } from '../types';
 import { generateBatchZip, generateCombinedMultiPagePdf } from '../utils/pdfGenerator';
+import { normalizeTurmaCode } from '../utils/turmaUtils';
 
-interface BatchManagerProps { recipients: Recipient[]; settings: OfficialCertificateSettings; currentIndex: number; onSelectIndex: (index: number) => void; onUpdateRecipients: (recipients: Recipient[]) => void; }
-const START_CERTIFICATE_NUMBER=6, CERTIFICATE_SUFFIX='/CVTE/2026', TEMPLATE_ROWS=59;
-const DEFAULT_PERIOD='08 a 16 de junho de 2026', DEFAULT_WORKLOAD='50h/a', DEFAULT_ISSUE_DATE='18 de junho de 2026';
-const CVTE_HEADERS=['Ord','Grad','Nome','CPF','RENACH','CAT','OM','Nº REGISTRO','VALIDADE','TELEFONE','EMAIL','CRACHÁ','FOI VERIFICADO?','LT','DD','PSAI','CCS'];
-const certificateCodeForIndex=(index:number)=>`${String(START_CERTIFICATE_NUMBER+index).padStart(3,'0')}${CERTIFICATE_SUFFIX}`;
-const normalizeHeader=(value:unknown)=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
-const readByAliases=(row:Record<string,unknown>,aliases:string[])=>{for(const alias of aliases){const found=Object.entries(row).find(([key])=>normalizeHeader(key)===normalizeHeader(alias));if(found&&found[1]!=null&&String(found[1]).trim()!=='')return String(found[1]).trim();}return '';};
-const renumberRecipients=(items:Recipient[])=>items.map((item,index)=>({...item,certNumber:certificateCodeForIndex(index),year:'2026'}));
+interface BatchManagerProps {
+  recipients: Recipient[];
+  settings: OfficialCertificateSettings;
+  currentIndex: number;
+  onSelectIndex: (index: number) => void;
+  onUpdateRecipients: (recipients: Recipient[]) => void;
+  onUpdateTurmaNumber: (newTurma: string) => void;
+}
 
-export const BatchManager:React.FC<BatchManagerProps>=({recipients,settings,currentIndex,onSelectIndex,onUpdateRecipients})=>{
- const[isGenerating,setIsGenerating]=useState(false); const[progress,setProgress]=useState(''); const fileInputRef=useRef<HTMLInputElement>(null);
- const update=(id:string,field:keyof Recipient,value:string)=>onUpdateRecipients(recipients.map(r=>r.id===id?{...r,[field]:value}:r));
- const downloadExcelTemplate=()=>{const rows=Array.from({length:TEMPLATE_ROWS},(_,i)=>[String(i+1).padStart(2,'0'),'','','','','','','','','','','','','','','','']);const ws=XLSX.utils.aoa_to_sheet([CVTE_HEADERS,...rows]);ws['!cols']=[{wch:7},{wch:11},{wch:38},{wch:18},{wch:18},{wch:8},{wch:18},{wch:18},{wch:14},{wch:20},{wch:32},{wch:12},{wch:18},{wch:8},{wch:8},{wch:8},{wch:8}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Folha1');XLSX.writeFile(wb,'CVTE.xlsx');setProgress('Planilha CVTE baixada. Preencha os dados e as notas LT, DD, PSAI e CCS e importe o mesmo arquivo.');};
- const addRecipient=()=>{const item:Recipient={id:`rec-${Date.now()}`,certNumber:certificateCodeForIndex(recipients.length),year:'2026',name:'',cpf:'',cnhRegistro:'',cnhCategoria:'',periodo:DEFAULT_PERIOD,cargaHoraria:DEFAULT_WORKLOAD,dataEmissao:DEFAULT_ISSUE_DATE,disciplinas:settings.defaultDisciplines.map(d=>({...d,avaliacao:''}))};onUpdateRecipients(renumberRecipients([...recipients,item]));onSelectIndex(recipients.length);};
- const removeRecipient=(id:string)=>{if(recipients.length<=1)return;const next=renumberRecipients(recipients.filter(r=>r.id!==id));onUpdateRecipients(next);if(currentIndex>=next.length)onSelectIndex(next.length-1);};
- const importExcel=async(file:File)=>{try{setProgress('Lendo planilha CVTE e importando notas...');const buffer=await file.arrayBuffer();const wb=XLSX.read(buffer,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];if(!ws)throw new Error('Sem aba válida');const rows=XLSX.utils.sheet_to_json<Record<string,unknown>>(ws,{defval:'',raw:false});const imported=rows.map((row,i)=>{const name=readByAliases(row,['NOME','NOME COMPLETO']);const cpf=readByAliases(row,['CPF']);const registro=readByAliases(row,['Nº REGISTRO','N REGISTRO','REGISTRO']);const categoria=readByAliases(row,['CAT','CATEGORIA']);if(![name,cpf,registro,categoria].some(Boolean))return null;
- const lt=readByAliases(row,['LT']); const dd=readByAliases(row,['DD']); const psai=readByAliases(row,['PSAI']); const ccs=readByAliases(row,['CCS']);
- const notes=[lt,dd,psai,ccs];
- const disciplinas=settings.defaultDisciplines.map((disc,idx)=>({...disc,avaliacao:notes[idx]||''}));
- return{id:`cvte-${Date.now()}-${i}`,certNumber:certificateCodeForIndex(i),year:'2026',name:name.toUpperCase(),cpf,cnhRegistro:registro,cnhCategoria:categoria.replace(/[“”]/g,'').toUpperCase(),periodo:readByAliases(row,['PERÍODO','PERIODO'])||DEFAULT_PERIOD,cargaHoraria:readByAliases(row,['CARGA','CARGA HORÁRIA','CARGA HORARIA'])||DEFAULT_WORKLOAD,dataEmissao:readByAliases(row,['DATA EMISSÃO','DATA EMISSAO','EMISSÃO','EMISSAO'])||DEFAULT_ISSUE_DATE,disciplinas} as Recipient;}).filter((x):x is Recipient=>Boolean(x));if(!imported.length)throw new Error('Nenhuma linha válida');const numbered=renumberRecipients(imported);onUpdateRecipients(numbered);onSelectIndex(0);setProgress(`${numbered.length} aluno(s) carregado(s). Notas LT, DD, PSAI e CCS vinculadas ao verso do PDF.`);}catch(e){console.error(e);setProgress('Erro ao importar. Use a planilha CVTE e mantenha as colunas LT, DD, PSAI e CCS.');}};
- const run=async(kind:'pdf'|'zip')=>{try{setIsGenerating(true);setProgress('Preparando certificados...');const numbered=renumberRecipients(recipients);onUpdateRecipients(numbered);const cb=(_c:number,_t:number,text:string)=>setProgress(text);if(kind==='zip')await generateBatchZip(numbered,settings,cb);else await generateCombinedMultiPagePdf(numbered,settings,cb);setProgress('Concluído.');}catch(e){console.error(e);setProgress('Erro ao gerar os arquivos.');}finally{setIsGenerating(false);}};
- return <div className="bg-white border border-slate-200 shadow-xs flex flex-col h-full overflow-hidden">
-  <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><Users className="w-5 h-5 text-blue-700"/><div><h2 className="font-bold text-slate-900">Geração em lote</h2><p className="text-xs text-slate-500">Modelo CVTE: dados do aluno e notas LT, DD, PSAI e CCS alimentam automaticamente os certificados.</p></div></div><div className="flex gap-2 flex-wrap"><button onClick={downloadExcelTemplate} className="px-3 py-2 border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"><Download className="w-3.5 h-3.5"/> Baixar planilha CVTE</button><button onClick={()=>fileInputRef.current?.click()} className="px-3 py-2 border text-xs font-semibold flex items-center gap-1.5 cursor-pointer"><Upload className="w-3.5 h-3.5"/> Importar planilha CVTE</button><input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={async e=>{const f=e.target.files?.[0];if(f)await importExcel(f);e.currentTarget.value='';}}/><button onClick={addRecipient} className="px-3 py-2 bg-slate-100 text-xs font-semibold flex items-center gap-1.5"><Plus className="w-3.5 h-3.5"/> Adicionar</button></div></div>
-  <div className="px-4 py-3 bg-slate-50 border-b flex flex-wrap items-center justify-between gap-3"><div className="text-xs text-slate-600"><div>{progress||`${recipients.length} certificado(s)`}</div><div className="mt-1 text-[11px] text-slate-500">006/CVTE/2026, 007/CVTE/2026, 008/CVTE/2026...</div></div><div className="flex gap-2"><button disabled={isGenerating} onClick={()=>run('pdf')} className="px-3 py-2 border bg-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"><Layers className="w-3.5 h-3.5"/> PDF único</button><button disabled={isGenerating} onClick={()=>run('zip')} className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50"><FileArchive className="w-3.5 h-3.5"/> ZIP com PDFs</button></div></div>
-  <div className="flex-1 overflow-auto"><table className="w-full text-xs border-collapse min-w-[1350px]"><thead className="sticky top-0 bg-slate-100 z-10"><tr className="border-b text-left text-slate-600">{['Nº CERTIFICADO','NOME','CPF','Nº REGISTRO','CATEGORIA','PERÍODO','CARGA','DATA EMISSÃO','AÇÃO'].map(h=><th key={h} className="p-2">{h}</th>)}</tr></thead><tbody>{recipients.map((r,index)=><tr key={r.id} onClick={()=>onSelectIndex(index)} className={`border-b ${index===currentIndex?'bg-blue-50':'hover:bg-slate-50'}`}><td className="p-2"><input value={certificateCodeForIndex(index)} readOnly className="w-full border px-2 py-1.5 bg-slate-50"/></td><td className="p-2"><input value={r.name} onChange={e=>update(r.id,'name',e.target.value.toUpperCase())} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.cpf} onChange={e=>update(r.id,'cpf',e.target.value)} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.cnhRegistro} onChange={e=>update(r.id,'cnhRegistro',e.target.value)} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.cnhCategoria} onChange={e=>update(r.id,'cnhCategoria',e.target.value.toUpperCase())} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.periodo} onChange={e=>update(r.id,'periodo',e.target.value)} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.cargaHoraria} onChange={e=>update(r.id,'cargaHoraria',e.target.value)} className="w-full border px-2 py-1.5"/></td><td className="p-2"><input value={r.dataEmissao} onChange={e=>update(r.id,'dataEmissao',e.target.value)} className="w-full border px-2 py-1.5"/></td><td className="p-2"><button onClick={e=>{e.stopPropagation();removeRecipient(r.id);}} className="p-2 text-red-600"><Trash2 className="w-4 h-4"/></button></td></tr>)}</tbody></table></div>
- </div>;
+const TEMPLATE_ROWS = 59;
+const DEFAULT_PERIOD = '08 a 16 de junho de 2026';
+const DEFAULT_WORKLOAD = '50h/a';
+const DEFAULT_ISSUE_DATE = '18 de junho de 2026';
+const CVTE_HEADERS = [
+  'Ord',
+  'Grad',
+  'Nome',
+  'CPF',
+  'RENACH',
+  'CAT',
+  'OM',
+  'Nº REGISTRO',
+  'VALIDADE',
+  'TELEFONE',
+  'EMAIL',
+  'CRACHÁ',
+  'FOI VERIFICADO?',
+  'LT',
+  'DD',
+  'PSAI',
+  'CCS',
+];
+
+const normalizeHeader = (value: unknown) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+
+const readByAliases = (row: Record<string, unknown>, aliases: string[]) => {
+  for (const alias of aliases) {
+    const found = Object.entries(row).find(([key]) => normalizeHeader(key) === normalizeHeader(alias));
+    if (found && found[1] != null && String(found[1]).trim() !== '') {
+      return String(found[1]).trim();
+    }
+  }
+  return '';
+};
+
+export const BatchManager: React.FC<BatchManagerProps> = ({
+  recipients,
+  settings,
+  currentIndex,
+  onSelectIndex,
+  onUpdateRecipients,
+  onUpdateTurmaNumber,
+}) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const turmaCode = settings.turmaNumber || '006/CVTE/2026';
+
+  const update = (id: string, field: keyof Recipient, value: string) =>
+    onUpdateRecipients(recipients.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+
+  const downloadExcelTemplate = () => {
+    const rows = Array.from({ length: TEMPLATE_ROWS }, (_, i) => [
+      String(i + 1).padStart(2, '0'),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([CVTE_HEADERS, ...rows]);
+    ws['!cols'] = [
+      { wch: 7 },
+      { wch: 11 },
+      { wch: 38 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 8 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 20 },
+      { wch: 32 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 8 },
+      { wch: 8 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Folha1');
+    XLSX.writeFile(wb, 'CVTE.xlsx');
+    setProgress('Planilha CVTE baixada. Preencha os dados e as notas LT, DD, PSAI e CCS e importe o mesmo arquivo.');
+  };
+
+  const addRecipient = () => {
+    const item: Recipient = {
+      id: `rec-${Date.now()}`,
+      certNumber: turmaCode,
+      year: '2026',
+      name: '',
+      cpf: '',
+      cnhRegistro: '',
+      cnhCategoria: '',
+      periodo: DEFAULT_PERIOD,
+      cargaHoraria: DEFAULT_WORKLOAD,
+      dataEmissao: DEFAULT_ISSUE_DATE,
+      disciplinas: settings.defaultDisciplines.map((d) => ({ ...d, avaliacao: '' })),
+    };
+    onUpdateRecipients([...recipients, item]);
+    onSelectIndex(recipients.length);
+  };
+
+  const removeRecipient = (id: string) => {
+    if (recipients.length <= 1) return;
+    const next = recipients.filter((r) => r.id !== id);
+    onUpdateRecipients(next);
+    if (currentIndex >= next.length) onSelectIndex(next.length - 1);
+  };
+
+  const importExcel = async (file: File) => {
+    try {
+      setProgress('Lendo planilha CVTE e importando notas...');
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      if (!ws) throw new Error('Sem aba válida');
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: false });
+      const imported = rows
+        .map((row, i) => {
+          const name = readByAliases(row, ['NOME', 'NOME COMPLETO']);
+          const cpf = readByAliases(row, ['CPF']);
+          const registro = readByAliases(row, ['Nº REGISTRO', 'N REGISTRO', 'REGISTRO']);
+          const categoria = readByAliases(row, ['CAT', 'CATEGORIA']);
+          if (![name, cpf, registro, categoria].some(Boolean)) return null;
+
+          const lt = readByAliases(row, ['LT']);
+          const dd = readByAliases(row, ['DD']);
+          const psai = readByAliases(row, ['PSAI']);
+          const ccs = readByAliases(row, ['CCS']);
+          const notes = [lt, dd, psai, ccs];
+          const disciplinas = settings.defaultDisciplines.map((disc, idx) => ({
+            ...disc,
+            avaliacao: notes[idx] || '',
+          }));
+
+          return {
+            id: `cvte-${Date.now()}-${i}`,
+            certNumber: turmaCode,
+            year: '2026',
+            name: name.toUpperCase(),
+            cpf,
+            cnhRegistro: registro,
+            cnhCategoria: categoria.replace(/[“”]/g, '').toUpperCase(),
+            periodo: readByAliases(row, ['PERÍODO', 'PERIODO']) || DEFAULT_PERIOD,
+            cargaHoraria: readByAliases(row, ['CARGA', 'CARGA HORÁRIA', 'CARGA HORARIA']) || DEFAULT_WORKLOAD,
+            dataEmissao:
+              readByAliases(row, ['DATA EMISSÃO', 'DATA EMISSAO', 'EMISSÃO', 'EMISSAO']) || DEFAULT_ISSUE_DATE,
+            disciplinas,
+          } as Recipient;
+        })
+        .filter((x): x is Recipient => Boolean(x));
+
+      if (!imported.length) throw new Error('Nenhuma linha válida');
+      onUpdateRecipients(imported);
+      onSelectIndex(0);
+      setProgress(`${imported.length} aluno(s) carregado(s). Turma: ${turmaCode}`);
+    } catch (e) {
+      console.error(e);
+      setProgress('Erro ao importar. Use a planilha CVTE e mantenha as colunas LT, DD, PSAI e CCS.');
+    }
+  };
+
+  const run = async (kind: 'pdf' | 'zip') => {
+    try {
+      setIsGenerating(true);
+      setProgress('Preparando certificados...');
+      // Ensure all recipients carry the current turma code
+      const updatedRecipients = recipients.map((r) => ({ ...r, certNumber: turmaCode }));
+      onUpdateRecipients(updatedRecipients);
+
+      const cb = (_c: number, _t: number, text: string) => setProgress(text);
+      if (kind === 'zip') await generateBatchZip(updatedRecipients, settings, cb);
+      else await generateCombinedMultiPagePdf(updatedRecipients, settings, cb);
+      setProgress('Concluído.');
+    } catch (e) {
+      console.error(e);
+      setProgress('Erro ao gerar os arquivos.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-slate-200 shadow-xs flex flex-col h-full overflow-hidden">
+      <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-blue-700" />
+          <div>
+            <h2 className="font-bold text-slate-900">Geração em lote</h2>
+            <p className="text-xs text-slate-500">
+              Modelo CVTE: dados dos alunos e notas vinculados aos certificados.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Campo de Número da Turma */}
+          <div className="flex items-center gap-1.5 border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+            <span className="text-xs font-bold text-slate-800 whitespace-nowrap">Nº da Turma:</span>
+            <input
+              type="text"
+              value={turmaCode}
+              onChange={(e) => onUpdateTurmaNumber(e.target.value.toUpperCase())}
+              onBlur={(e) => onUpdateTurmaNumber(normalizeTurmaCode(e.target.value))}
+              placeholder="006/CVTE/2026"
+              className="w-32 border border-slate-300 bg-white px-2 py-1 text-xs font-mono font-bold text-slate-900 uppercase outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <button
+            onClick={downloadExcelTemplate}
+            className="px-3 py-2 border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" /> Baixar planilha CVTE
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-2 border text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5" /> Importar planilha CVTE
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (f) await importExcel(f);
+              e.currentTarget.value = '';
+            }}
+          />
+          <button
+            onClick={addRecipient}
+            className="px-3 py-2 bg-slate-100 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> Adicionar
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 bg-slate-50 border-b flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs text-slate-600">
+          <div>{progress || `${recipients.length} certificado(s)`}</div>
+          <div className="mt-1 text-[11px] text-slate-500 font-medium">
+            Turma: <strong className="font-mono text-slate-800">{turmaCode}</strong>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            disabled={isGenerating}
+            onClick={() => run('pdf')}
+            className="px-3 py-2 border bg-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <Layers className="w-3.5 h-3.5" /> PDF único
+          </button>
+          <button
+            disabled={isGenerating}
+            onClick={() => run('zip')}
+            className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <FileArchive className="w-3.5 h-3.5" /> ZIP com PDFs
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-xs border-collapse min-w-[1350px]">
+          <thead className="sticky top-0 bg-slate-100 z-10">
+            <tr className="border-b text-left text-slate-600">
+              {[
+                'Nº DA TURMA',
+                'NOME',
+                'CPF',
+                'Nº REGISTRO',
+                'CATEGORIA',
+                'PERÍODO',
+                'CARGA',
+                'DATA EMISSÃO',
+                'AÇÃO',
+              ].map((h) => (
+                <th key={h} className="p-2">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {recipients.map((r, index) => (
+              <tr
+                key={r.id}
+                onClick={() => onSelectIndex(index)}
+                className={`border-b ${index === currentIndex ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              >
+                <td className="p-2 w-36">
+                  <input
+                    value={turmaCode}
+                    readOnly
+                    className="w-full border border-slate-200 px-2 py-1.5 bg-slate-50 font-mono text-center font-bold text-slate-800 cursor-not-allowed"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.name}
+                    onChange={(e) => update(r.id, 'name', e.target.value.toUpperCase())}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.cpf}
+                    onChange={(e) => update(r.id, 'cpf', e.target.value)}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.cnhRegistro}
+                    onChange={(e) => update(r.id, 'cnhRegistro', e.target.value)}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.cnhCategoria}
+                    onChange={(e) => update(r.id, 'cnhCategoria', e.target.value.toUpperCase())}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.periodo}
+                    onChange={(e) => update(r.id, 'periodo', e.target.value)}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.cargaHoraria}
+                    onChange={(e) => update(r.id, 'cargaHoraria', e.target.value)}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    value={r.dataEmissao}
+                    onChange={(e) => update(r.id, 'dataEmissao', e.target.value)}
+                    className="w-full border px-2 py-1.5"
+                  />
+                </td>
+                <td className="p-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeRecipient(r.id);
+                    }}
+                    className="p-2 text-red-600 hover:bg-red-50 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
