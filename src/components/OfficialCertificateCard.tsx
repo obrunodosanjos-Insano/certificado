@@ -37,6 +37,13 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
 
   return (
     <div id={id} style={{ width: '892px', height: '621px', transform: scale !== 1 ? `scale(${scale})` : undefined, transformOrigin: 'top left' }} className="relative overflow-hidden bg-white text-black select-none">
+      <img
+        src="/fundo.png"
+        alt="Fundo do Certificado"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+        draggable={false}
+      />
+
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute top-[10px] left-[24px] right-[24px] border-t-[3px] border-black" />
         <div className="absolute top-[16px] left-[24px] right-[24px] border-t border-black" />

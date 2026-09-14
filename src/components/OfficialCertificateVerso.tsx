@@ -33,6 +33,12 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
       }}
       className="relative bg-white text-black font-sans select-none box-border px-14 py-8 overflow-hidden flex flex-col justify-between"
     >
+      <img
+        src="/fundo.png"
+        alt="Fundo do Certificado"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+        draggable={false}
+      />
       <div className="absolute inset-4 pointer-events-none z-10">
         <div className="absolute top-2 left-16 right-16 border-t-2 border-black" />
         <div className="absolute top-3.5 left-16 right-16 border-t border-black" />
