@@ -1,6 +1,5 @@
 import React from 'react';
 import { OfficialCertificateSettings, Recipient } from '../types';
-import { CertificateCorner } from './CertificateOrnaments';
 
 interface OfficialCertificateVersoProps {
   recipient: Recipient;
@@ -31,7 +30,7 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
         transform: scale !== 1 ? `scale(${scale})` : undefined,
         transformOrigin: 'top left',
       }}
-      className="relative bg-white text-black font-sans select-none box-border px-14 py-8 overflow-hidden flex flex-col justify-between"
+      className="relative bg-white text-black font-sans select-none box-border px-14 pt-[74px] pb-8 overflow-hidden flex flex-col justify-between"
     >
       <img
         src="/fundo.png"
@@ -39,16 +38,13 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
         className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
         draggable={false}
       />
-      <div className="absolute inset-4 pointer-events-none z-10">
-        <div className="absolute top-2 left-16 right-16 border-t-2 border-black" />
-        <div className="absolute top-3.5 left-16 right-16 border-t border-black" />
-        <div className="absolute bottom-2 left-16 right-16 border-b-2 border-black" />
-        <div className="absolute bottom-3.5 left-16 right-16 border-b border-black" />
-        <CertificateCorner position="top-left" className="absolute top-0 left-0 w-16 h-16 text-black" />
-        <CertificateCorner position="top-right" className="absolute top-0 right-0 w-16 h-16 text-black" />
-        <CertificateCorner position="bottom-left" className="absolute bottom-0 left-0 w-16 h-16 text-black" />
-        <CertificateCorner position="bottom-right" className="absolute bottom-0 right-0 w-16 h-16 text-black" />
-      </div>
+
+      <img
+        src="/Borda.png"
+        alt="Borda do Certificado"
+        className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+        draggable={false}
+      />
 
       <div className="relative z-20 flex items-center justify-between min-h-[110px]">
         <div className="w-[110px] flex justify-start">

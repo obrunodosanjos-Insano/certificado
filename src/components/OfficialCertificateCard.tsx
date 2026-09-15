@@ -59,7 +59,7 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
         <img src={settings.badmLogoUrl || "/badm-qgex-logo.png"} alt="B ADM QGEX" className="w-full h-full object-contain" draggable={false} />
       </div>
 
-      <div className="absolute left-[300px] top-[8px] w-[300px] text-center z-10">
+      <div className="absolute left-[296px] top-[8px] w-[300px] text-center z-10">
         <div className="h-[48px]" aria-hidden="true" />
         <div className="font-serif text-[34px] leading-none tracking-[0.07em] text-[#e05b31]">CERTIFICADO</div>
         <div className="mt-[10px] font-sans text-[15px] font-bold leading-[1.12]">Condutores de Veículos de<br />Transporte de Emergência</div>
