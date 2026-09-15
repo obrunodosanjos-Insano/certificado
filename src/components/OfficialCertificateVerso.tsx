@@ -52,7 +52,7 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
 
       <div className="relative z-20 flex items-center justify-between min-h-[110px]">
         <div className="w-[110px] flex justify-start">
-          <img src="/sgex-logo.jpg" alt="Brasão SGEx" className="w-[74px] h-[98px] object-contain" draggable={false} />
+          <img src={settings.sgexLogoUrl || "/sgex-logo.png"} alt="Brasão SGEx" className="w-[74px] h-[98px] object-contain" draggable={false} />
         </div>
         <div className="flex-1 text-center px-2">
           <h2 className="text-[26px] font-black tracking-tight uppercase leading-none">
@@ -61,7 +61,7 @@ export const OfficialCertificateVerso: React.FC<OfficialCertificateVersoProps> =
           <div className="text-[26px] font-black tracking-wider uppercase mt-1">“FORTE CAXIAS”</div>
         </div>
         <div className="w-[110px] flex justify-end">
-          <img src="/badm-qgex-logo.jpg" alt="Brasão B ADM QGEX" className="w-[74px] h-[98px] object-contain" draggable={false} />
+          <img src={settings.badmLogoUrl || "/badm-qgex-logo.png"} alt="Brasão B ADM QGEX" className="w-[74px] h-[98px] object-contain" draggable={false} />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { OfficialCertificateSettings, Recipient } from '../types';
-import { TopFlourish, BottomSubtitleFlourish } from './CertificateOrnaments';
+import { BottomSubtitleFlourish } from './CertificateOrnaments';
 
 interface OfficialCertificateCardProps {
   recipient: Recipient;
@@ -45,22 +45,22 @@ export const OfficialCertificateCard: React.FC<OfficialCertificateCardProps> = (
         draggable={false}
       />
 
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-[10px] left-[24px] right-[24px] border-t-[3px] border-black" />
-        <div className="absolute top-[16px] left-[24px] right-[24px] border-t border-black" />
-        <div className="absolute bottom-[10px] left-[24px] right-[24px] border-b-[3px] border-black" />
-        <div className="absolute bottom-[16px] left-[24px] right-[24px] border-b border-black" />
-      </div>
+      <img
+        src="/Borda.png"
+        alt="Borda do Certificado"
+        className="absolute inset-0 w-full h-full object-fill pointer-events-none z-0"
+        draggable={false}
+      />
 
       <div className="absolute left-[72px] top-[46px] z-10 w-[82px] h-[96px] flex items-center justify-center">
-        <img src="/sgex-logo.jpg" alt="SGEx" className="w-full h-full object-contain" draggable={false} />
+        <img src={settings.sgexLogoUrl || "/sgex-logo.png"} alt="SGEx" className="w-full h-full object-contain" draggable={false} />
       </div>
       <div className="absolute left-[720px] top-[46px] z-10 w-[82px] h-[96px] flex items-center justify-center">
-        <img src="/badm-qgex-logo.jpg" alt="B ADM QGEX" className="w-full h-full object-contain" draggable={false} />
+        <img src={settings.badmLogoUrl || "/badm-qgex-logo.png"} alt="B ADM QGEX" className="w-full h-full object-contain" draggable={false} />
       </div>
 
       <div className="absolute left-[300px] top-[8px] w-[300px] text-center z-10">
-        <TopFlourish className="mx-auto w-[170px] h-[45px] text-black" />
+        <div className="h-[48px]" aria-hidden="true" />
         <div className="font-serif text-[34px] leading-none tracking-[0.07em] text-[#e05b31]">CERTIFICADO</div>
         <div className="mt-[10px] font-sans text-[15px] font-bold leading-[1.12]">Condutores de Veículos de<br />Transporte de Emergência</div>
         <BottomSubtitleFlourish className="mx-auto mt-[3px] w-[230px] h-[30px] text-black" />
